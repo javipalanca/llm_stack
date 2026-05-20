@@ -81,8 +81,8 @@ start_model() {
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <model_name>"
     echo "Available models:"
-    for m in "${!MODEL_MAP[@]}"; do
-        echo "  $m (${MODEL_MAP[$m]})"
+    for m in $(list_models); do
+        echo "  $m ($(get_model_repo_id "$m"))"
     done
     exit 1
 fi

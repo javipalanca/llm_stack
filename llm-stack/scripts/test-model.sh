@@ -75,7 +75,7 @@ test_all_models() {
     echo "Testing all models..."
     echo ""
     
-    for model in "${!MODEL_MAP[@]}"; do
+    for model in $(list_models); do
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         if test_model "$model"; then
             passed+=("$model")
@@ -100,7 +100,7 @@ if [ $# -eq 0 ]; then
     echo "Usage: $0 <model_name|--all> [prompt]"
     echo ""
     echo "Available models:"
-    for m in "${!MODEL_MAP[@]}"; do
+    for m in $(list_models); do
         echo "  $m"
     done
     echo ""

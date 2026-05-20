@@ -10,53 +10,50 @@ source "$SCRIPT_DIR/model-lib.sh"
 search_huggingface_models() {
     local query=$1
     
-    if ! command -v huggingface-cli &> /dev/null; then
-        log_error "huggingface-cli not found. Install with: pip install huggingface-hub"
-        return 1
-    fi
-    
     log_info "Searching HuggingFace for models matching '$query'..."
     log_info "(This may take a moment...)"
     echo ""
-    
-    # Search for models on HuggingFace hub
-    local results=$(huggingface-cli list-repo-tree \
-        --repo-id-prefix "$query" \
-        --repo-type model 2>/dev/null | head -20 || echo "")
-    
-    if [ -z "$results" ]; then
-        # Fallback: use web search (simulated with common patterns)
-        echo "Popular models matching '$query':"
-        case "${query,,}" in
-            llama*)
-                echo "  meta-llama/Llama-3.3-70B-Instruct-AWQ"
-                echo "  meta-llama/Llama-3.3-70B-Instruct"
-                echo "  meta-llama/Llama-2-70b-chat-hf"
-                ;;
-            qwen*)
-                echo "  Qwen/Qwen2-72B-Instruct"
-                echo "  Qwen/Qwen3.6-35B"
-                ;;
-            deepseek*)
-                echo "  deepseek-ai/deepseek-r1-distill-qwen-32b"
-                echo "  deepseek-ai/deepseek-v2-chat"
-                ;;
-            mimo*)
-                echo "  mimo-v2.5-pro (custom/private model)"
-                ;;
-            llava*)
-                echo "  llava-hf/llava-1.5-7b-hf"
-                echo "  llava-hf/llava-v1.6-34b-hf"
-                ;;
-            *)
-                echo "  Use huggingface-cli search '$query' for full results"
-                echo "  or visit: https://huggingface.co/models?search=$query"
-                ;;
-        esac
-        return 0
+
+    local url="https://huggingface.co/api/models?search=${query}&limit=20"
+    local raw
+    raw=$(curl -fsSL "$url" 2>/dev/null || true)
+
+    if [ -n "$raw" ] && command -v jq > /dev/null 2>&1; then
+        local parsed
+        parsed=$(echo "$raw" | jq -r '.[]?.id' 2>/dev/null | sed '/^$/d' | head -20 || true)
+        if [ -n "$parsed" ]; then
+            echo "$parsed"
+            return 0
+        fi
     fi
     
-    echo "$results"
+    # Fallback: suggestions when API or jq is unavailable.
+    echo "Popular models matching '$query':"
+    case "${query,,}" in
+        llama*)
+            echo "  meta-llama/Llama-3.3-70B-Instruct"
+            echo "  meta-llama/Llama-3.1-70B-Instruct"
+            echo "  casperhansen/llama-3.3-70b-instruct-awq"
+            ;;
+        qwen*)
+            echo "  Qwen/Qwen2.5-72B-Instruct"
+            echo "  Qwen/Qwen2.5-32B-Instruct"
+            ;;
+        deepseek*)
+            echo "  deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+            echo "  deepseek-ai/deepseek-llm-67b-chat"
+            ;;
+        mimo*)
+            echo "  mimo-v2.5-pro (custom/private model)"
+            ;;
+        llava*)
+            echo "  llava-hf/llava-1.5-13b-hf"
+            echo "  llava-hf/llava-v1.6-34b-hf"
+            ;;
+        *)
+            echo "  Visit: https://huggingface.co/models?search=$query"
+            ;;
+    esac
 }
 
 # ===== Interactive Model Selection =====
@@ -68,9 +65,9 @@ select_model_interactive() {
     
     local -a options
     local idx=1
-    
-    for m in "${!MODEL_MAP[@]}"; do
-        echo "  [$idx] $m (${MODEL_MAP[$m]})"
+
+    for m in $(list_models); do
+        echo "  [$idx] $m ($(get_model_repo_id "$m"))"
         options[$idx]=$m
         ((idx++))
     done
@@ -109,6 +106,8 @@ select_model_interactive() {
 download_hf_model() {
     local model_id=$1
     local custom_name=${2:-$(basename "$model_id")}
+
+    ensure_hf_cli_available || return 1
     
     log_info "Downloading custom model: $model_id"
     log_info "This model will be stored as: $custom_name"
@@ -127,18 +126,20 @@ download_hf_model() {
     
     mkdir -p "$model_path"
     
-    local hf_cmd="huggingface-cli download --repo-type model --cache-dir $HF_CACHE --local-dir $model_path"
-    
     if [ -n "${HF_TOKEN:-}" ]; then
-        hf_cmd="$hf_cmd --token $HF_TOKEN"
+        if ! hf_cli download --repo-type model --cache-dir "$HF_CACHE" --local-dir "$model_path" --token "$HF_TOKEN" "$model_id"; then
+            log_error "Failed to download model $model_id"
+            rm -rf "$model_path"
+            return 1
+        fi
+    else
+        if ! hf_cli download --repo-type model --cache-dir "$HF_CACHE" --local-dir "$model_path" "$model_id"; then
+            log_error "Failed to download model $model_id"
+            rm -rf "$model_path"
+            return 1
+        fi
     fi
-    
-    if ! $hf_cmd "$model_id"; then
-        log_error "Failed to download model $model_id"
-        rm -rf "$model_path"
-        return 1
-    fi
-    
+
     log_info "Model downloaded successfully to $model_path"
     return 0
 }
@@ -147,35 +148,41 @@ download_hf_model() {
 
 download_model() {
     local model=$1
-    
+
+    ensure_hf_cli_available || return 1
+
     if ! validate_model "$model"; then
         return 1
     fi
-    
-    local model_name=${MODEL_MAP[$model]}
-    local model_path=$(get_model_path "$model")
-    
+
+    local model_name
+    local model_path
+    model_name=$(get_model_repo_id "$model")
+    model_path=$(get_model_path "$model")
+
     if model_is_downloaded "$model"; then
         log_info "Model $model already downloaded at $model_path"
         return 0
     fi
-    
+
     log_info "Downloading model $model ($model_name)..."
-    
+
     mkdir -p "$model_path"
-    
-    local hf_cmd="huggingface-cli download --repo-type model --cache-dir $HF_CACHE --local-dir $model_path"
-    
+
     if [ -n "${HF_TOKEN:-}" ]; then
-        hf_cmd="$hf_cmd --token $HF_TOKEN"
+        if ! hf_cli download --repo-type model --cache-dir "$HF_CACHE" --local-dir "$model_path" --token "$HF_TOKEN" "$model_name"; then
+            log_error "Failed to download model $model"
+            rm -rf "$model_path"
+            return 1
+        fi
+    else
+        if ! hf_cli download --repo-type model --cache-dir "$HF_CACHE" --local-dir "$model_path" "$model_name"; then
+            log_error "Failed to download model $model"
+            rm -rf "$model_path"
+            return 1
+        fi
     fi
-    
-    if ! $hf_cmd "$model_name"; then
-        log_error "Failed to download model $model"
-        rm -rf "$model_path"
-        return 1
-    fi
-    
+
     log_info "Model $model downloaded successfully to $model_path"
     return 0
 }
@@ -201,12 +208,12 @@ fi
 case "$1" in
     --list)
         echo "Available models:"
-        for m in "${!MODEL_MAP[@]}"; do
+        for m in $(list_models); do
             path=$(get_model_path "$m")
             if model_is_downloaded "$m"; then
-                echo "  ✓ $m (${MODEL_MAP[$m]}) - Already downloaded"
+                echo "  ✓ $m ($(get_model_repo_id "$m")) - Already downloaded"
             else
-                echo "  ✗ $m (${MODEL_MAP[$m]})"
+                echo "  ✗ $m ($(get_model_repo_id "$m"))"
             fi
         done
         ;;

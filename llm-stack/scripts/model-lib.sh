@@ -19,37 +19,28 @@ else
 fi
 
 # ===== Model Definitions =====
-declare -A MODEL_MAP=(
-    [llama33]="llama-3.3-70b-instruct-awq"
-    [qwen36]="qwen3.6-35b-a3b-claude-4.7-opus-reasoning-distilled"
-    [mimo]="mimo-v2.5-pro"
-    [llava]="llava"
-    [deepseek]="deepseek-r1-distill-qwen-32b"
-)
 
-declare -A MODEL_SERVER=(
-    [llama33]="blackwell"
-    [qwen36]="blackwell"
-    [mimo]="a30"
-    [llava]="a30"
-    [deepseek]="a30"
-)
+list_models() {
+    cat <<'EOF'
+llama33
+qwen36
+mimo
+llava
+deepseek
+EOF
+}
 
-declare -A MODEL_PORT=(
-    [llama33]="8001"
-    [qwen36]="8002"
-    [mimo]="8003"
-    [llava]="8004"
-    [deepseek]="8005"
-)
-
-declare -A MODEL_SERVICE=(
-    [llama33]="vllm-llama33"
-    [qwen36]="vllm-qwen36"
-    [mimo]="vllm-mimo"
-    [llava]="vllm-llava"
-    [deepseek]="vllm-deepseek"
-)
+get_model_repo_id() {
+    local model=$1
+    case "$model" in
+        llama33) echo "llama-3.3-70b-instruct-awq" ;;
+        qwen36) echo "qwen3.6-35b-a3b-claude-4.7-opus-reasoning-distilled" ;;
+        mimo) echo "mimo-v2.5-pro" ;;
+        llava) echo "llava" ;;
+        deepseek) echo "deepseek-r1-distill-qwen-32b" ;;
+        *) return 1 ;;
+    esac
+}
 
 # ===== Utility Functions =====
 
@@ -67,9 +58,9 @@ log_warn() {
 
 validate_model() {
     local model=$1
-    if [[ ! -v MODEL_MAP[$model] ]]; then
+    if ! get_model_repo_id "$model" > /dev/null 2>&1; then
         log_error "Unknown model: $model"
-        log_error "Available models: ${!MODEL_MAP[@]}"
+        log_error "Available models: $(list_models | tr '\n' ' ')"
         return 1
     fi
     return 0
@@ -77,26 +68,46 @@ validate_model() {
 
 get_model_path() {
     local model=$1
+    local repo_id
     validate_model "$model" || return 1
-    echo "$MODELS_PATH/${MODEL_MAP[$model]}"
+    repo_id=$(get_model_repo_id "$model")
+    echo "$MODELS_PATH/$repo_id"
 }
 
 get_model_server() {
     local model=$1
     validate_model "$model" || return 1
-    echo "${MODEL_SERVER[$model]}"
+    case "$model" in
+        llama33|qwen36) echo "blackwell" ;;
+        mimo|llava|deepseek) echo "a30" ;;
+        *) return 1 ;;
+    esac
 }
 
 get_model_port() {
     local model=$1
     validate_model "$model" || return 1
-    echo "${MODEL_PORT[$model]}"
+    case "$model" in
+        llama33) echo "8001" ;;
+        qwen36) echo "8002" ;;
+        mimo) echo "8003" ;;
+        llava) echo "8004" ;;
+        deepseek) echo "8005" ;;
+        *) return 1 ;;
+    esac
 }
 
 get_model_service() {
     local model=$1
     validate_model "$model" || return 1
-    echo "${MODEL_SERVICE[$model]}"
+    case "$model" in
+        llama33) echo "vllm-llama33" ;;
+        qwen36) echo "vllm-qwen36" ;;
+        mimo) echo "vllm-mimo" ;;
+        llava) echo "vllm-llava" ;;
+        deepseek) echo "vllm-deepseek" ;;
+        *) return 1 ;;
+    esac
 }
 
 get_compose_file() {
@@ -184,13 +195,46 @@ port_is_in_use() {
     lsof -i :$port > /dev/null 2>&1
 }
 
+# ===== Hugging Face CLI Helpers =====
+
+hf_cli() {
+    if command -v huggingface-cli > /dev/null 2>&1; then
+        huggingface-cli "$@"
+        return
+    fi
+
+    if command -v uvx > /dev/null 2>&1; then
+        # Run huggingface-cli without system-wide installation.
+        uvx --from huggingface-hub huggingface-cli "$@"
+        return
+    fi
+
+    log_error "huggingface-cli not found. Install locally with uv or pip."
+    log_error "Recommended (no system install): uvx --from huggingface-hub huggingface-cli --help"
+    return 1
+}
+
+ensure_hf_cli_available() {
+    if command -v huggingface-cli > /dev/null 2>&1; then
+        return 0
+    fi
+    if command -v uvx > /dev/null 2>&1; then
+        return 0
+    fi
+
+    log_error "Neither huggingface-cli nor uvx is available in PATH."
+    log_error "Install uv: https://docs.astral.sh/uv/getting-started/installation/"
+    return 1
+}
+
 # Export all functions for sourcing
 export -f log_info log_error log_warn
+export -f list_models get_model_repo_id
 export -f validate_model get_model_path get_model_server get_model_port get_model_service
 export -f get_compose_file get_docker_compose_cmd
 export -f model_is_running model_is_downloaded
 export -f wait_for_model_health
 export -f check_gpu_available get_gpu_memory_usage
 export -f port_is_in_use
-export MODEL_MAP MODEL_SERVER MODEL_PORT MODEL_SERVICE
+export -f hf_cli ensure_hf_cli_available
 export PROJECT_DIR COMPOSE_DIR CONFIG_DIR MODELS_PATH HF_CACHE HF_TOKEN

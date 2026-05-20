@@ -42,20 +42,20 @@ show_status() {
     
     echo ""
     echo "─── MODELS ───"
-    for model in "${!MODEL_MAP[@]}"; do
+    for model in $(list_models); do
         if model_is_running "$model"; then
             port=$(get_model_port "$model")
             status="✓ RUNNING (port $port)"
         else
             status="✗ STOPPED"
         fi
-        
+
         if model_is_downloaded "$model"; then
             dl_status="✓ DOWNLOADED"
         else
             dl_status="✗ NOT DOWNLOADED"
         fi
-        
+
         echo "$model: $status | $dl_status"
     done
     
@@ -85,8 +85,8 @@ show_status() {
     # Model Port Status
     echo ""
     echo "─── MODEL ENDPOINTS ───"
-    for model in "${!MODEL_PORT[@]}"; do
-        port=${MODEL_PORT[$model]}
+    for model in $(list_models); do
+        port=$(get_model_port "$model")
         if curl -sf "http://localhost:$port/health" > /dev/null 2>&1; then
             echo "✓ $model: http://localhost:$port (port $port)"
         else

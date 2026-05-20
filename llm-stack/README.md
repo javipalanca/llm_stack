@@ -85,8 +85,15 @@ llm-stack/
 - NVIDIA GPU drivers (525.x or later)
 - `nvidia-smi` accessible in PATH
 - `curl` for health checks and testing
-- `huggingface-cli` for model downloads (`pip install huggingface-hub`)
+- `huggingface-cli` for model downloads OR `uvx` (recommended, no system-wide install)
 - `jq` for JSON parsing (optional, for test reports)
+
+Hugging Face CLI without global install:
+
+```bash
+# Run huggingface-cli ad-hoc via uvx
+uvx --from huggingface-hub huggingface-cli --help
+```
 
 ### Network Requirements
 - Blackwell and A30 servers must be on the same LAN or have stable network connectivity
@@ -345,13 +352,24 @@ Restart a model (stop + start).
 ./scripts/restart-model.sh mimo
 ```
 
-### `./scripts/download-model.sh <model_name>`
+### `./scripts/download-model.sh [options]`
 
-Download a model from HuggingFace. Uses `HF_TOKEN` if set, auto-detects model paths.
+Download models from HuggingFace. Uses `HF_TOKEN` if set, auto-detects model paths.
+If `huggingface-cli` is not installed globally, scripts use `uvx` automatically.
 
 ```bash
+# Predefined models
 ./scripts/download-model.sh llama33
 ./scripts/download-model.sh deepseek
+
+# Search Hugging Face hub
+./scripts/download-model.sh --search llama
+
+# Interactive picker
+./scripts/download-model.sh --interactive
+
+# Custom model by HF repo id
+./scripts/download-model.sh --hf meta-llama/Llama-3.1-8B-Instruct
 ```
 
 ### `./scripts/status.sh`
@@ -644,11 +662,11 @@ rate(vllm_tokens_generated_total[1m])
 2. Check HuggingFace token if model is gated:
    ```bash
    export HF_TOKEN=hf_your_token
-   huggingface-cli download meta-llama/Llama-2-70b-chat
+  uvx --from huggingface-hub huggingface-cli download meta-llama/Llama-2-70b-chat
    ```
 3. Try manual download to test connectivity:
    ```bash
-   huggingface-cli download --repo-type model \
+  uvx --from huggingface-hub huggingface-cli download --repo-type model \
      meta-llama/Llama-3.3-70B-Instruct-AWQ
    ```
 
@@ -703,12 +721,12 @@ sleep 3  # Wait for GPU memory to free
 2. Test token:
    ```bash
    export HF_TOKEN=hf_your_token
-   huggingface-cli whoami
+  uvx --from huggingface-hub huggingface-cli whoami
    ```
 3. Check internet connectivity
 4. Try manual download with timeout:
    ```bash
-   timeout 300 huggingface-cli download \
+  timeout 300 uvx --from huggingface-hub huggingface-cli download \
      --repo-type model \
      --cache-dir /models \
      meta-llama/Llama-3.3-70B-Instruct-AWQ
