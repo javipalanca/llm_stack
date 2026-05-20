@@ -8,10 +8,52 @@ COMPOSE_DIR="$PROJECT_DIR/compose"
 CONFIG_DIR="$PROJECT_DIR/config"
 
 # Load environment
+load_env_file() {
+    local env_file=$1
+    local line
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Normalize CRLF endings.
+        line=${line%$'\r'}
+
+        # Trim leading spaces for comment/blank detection.
+        line="${line#"${line%%[![:space:]]*}"}"
+
+        case "$line" in
+            ''|'#'*) continue ;;
+        esac
+
+        # Skip lines that are not KEY=VALUE assignments.
+        case "$line" in
+            *=*) ;;
+            *) continue ;;
+        esac
+
+        local key="${line%%=*}"
+        local value="${line#*=}"
+
+        # Trim spaces around key and leading spaces on value.
+        key="${key%"${key##*[![:space:]]}"}"
+        key="${key#"${key%%[![:space:]]*}"}"
+        value="${value#"${value%%[![:space:]]*}"}"
+
+        # Strip surrounding single or double quotes if present.
+        if [ ${#value} -ge 2 ]; then
+            local first_char="${value:0:1}"
+            local last_char="${value:${#value}-1:1}"
+            if [ "$first_char" = '"' ] && [ "$last_char" = '"' ]; then
+                value="${value:1:${#value}-2}"
+            elif [ "$first_char" = "'" ] && [ "$last_char" = "'" ]; then
+                value="${value:1:${#value}-2}"
+            fi
+        fi
+
+        export "$key=$value"
+    done < "$env_file"
+}
+
 if [ -f "$PROJECT_DIR/.env" ]; then
-    set -a
-    source "$PROJECT_DIR/.env"
-    set +a
+    load_env_file "$PROJECT_DIR/.env"
 else
     echo "Error: .env file not found at $PROJECT_DIR/.env"
     echo "Please copy .env.example to .env and update with your values."
