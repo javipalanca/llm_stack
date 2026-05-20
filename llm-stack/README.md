@@ -30,9 +30,10 @@ A production-ready setup for running multiple LLMs across two GPU servers (Black
 ### Server: Blackwell
 - **GPU 0**: NVIDIA RTX PRO 6000 Blackwell (96 GB VRAM) → `llama33` (port 8001)
 - **GPU 1**: NVIDIA RTX PRO 6000 Blackwell (96 GB VRAM) → `qwen36` (port 8002)
+- **GPU 0+1 (alternative profile)**: `mimo25bw` (XiaomiMiMo/MiMo-V2.5, experimental with CPU offload) (port 8006)
 
 ### Server: A30
-- **GPU 0+1**: 2× NVIDIA A30 (24 GB each) → `mimo` with tensor-parallel (port 8003)
+- **GPU 0**: NVIDIA A30 (24 GB) → `mimo` (MiMo-7B-RL) (port 8003)
 - **GPU 2**: NVIDIA A30 (24 GB) → `llava` (port 8004)
 - **GPU 0+1**: 2× NVIDIA A30 → `deepseek` alternative (port 8005) *not running by default*
 
@@ -41,10 +42,11 @@ A production-ready setup for running multiple LLMs across two GPU servers (Black
 | Model | Server | GPU | Port | Notes |
 |-------|--------|-----|------|-------|
 | `llama33` | Blackwell | 0 | 8001 | Llama 3.3 70B AWQ |
-| `qwen36` | Blackwell | 1 | 8002 | Qwen 3.6 35B |
-| `mimo` | A30 | 0,1 | 8003 | MIMO v2.5 Pro (tensor-parallel) |
+| `qwen36` | Blackwell | 1 | 8002 | Qwen 3.6 27B |
+| `mimo25bw` | Blackwell | 0,1 | 8006 | XiaomiMiMo MiMo-V2.5 (experimental profile) |
+| `mimo` | A30 | 0 | 8003 | XiaomiMiMo MiMo-7B-RL |
 | `llava` | A30 | 2 | 8004 | LLaVA multimodal |
-| `deepseek` | A30 | 0,1 | 8005 | DeepSeek R1 (alternative to MIMO) |
+| `deepseek` | A30 | 0,1 | 8005 | DeepSeek R1 Distill Qwen 14B (alternative to `mimo`) |
 
 **Note**: `deepseek` and `mimo` share the same GPUs (A30:0,1). Only one can run simultaneously.
 
@@ -141,9 +143,17 @@ A30_HOST=a30
 # GPU memory utilization (0.85-0.90 recommended)
 LLAMA33_GPU_MEMORY_UTILIZATION=0.90
 QWEN36_GPU_MEMORY_UTILIZATION=0.90
-MIMO_GPU_MEMORY_UTILIZATION=0.88
+MIMO_GPU_MEMORY_UTILIZATION=0.85
 LLAVA_GPU_MEMORY_UTILIZATION=0.85
-DEEPSEEK_GPU_MEMORY_UTILIZATION=0.88
+DEEPSEEK_GPU_MEMORY_UTILIZATION=0.85
+
+# Tool calling (MCP/OpenAI tools compatibility)
+LLAMA33_TOOL_ARGS=--enable-auto-tool-choice --tool-call-parser llama3_json
+QWEN36_TOOL_ARGS=--enable-auto-tool-choice --tool-call-parser hermes
+MIMO25BW_TOOL_ARGS=--enable-auto-tool-choice --tool-call-parser hermes
+MIMO_TOOL_ARGS=--enable-auto-tool-choice --tool-call-parser hermes
+LLAVA_TOOL_ARGS=
+DEEPSEEK_TOOL_ARGS=--enable-auto-tool-choice --tool-call-parser hermes
 ```
 
 ### 3. Prepare Model Storage

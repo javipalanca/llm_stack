@@ -34,6 +34,26 @@ start_model() {
             return 1
         fi
     fi
+
+    if [ "$model" = "mimo25bw" ] && { model_is_running "llama33" || model_is_running "qwen36"; }; then
+        log_warn "llama33/qwen36 may be running. mimo25bw uses both Blackwell GPUs (0,1)."
+        log_warn "Stop conflicting models first: ./stop-model.sh llama33 && ./stop-model.sh qwen36"
+        read -p "Do you want to continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            return 1
+        fi
+    fi
+
+    if { [ "$model" = "llama33" ] || [ "$model" = "qwen36" ]; } && model_is_running "mimo25bw"; then
+        log_warn "mimo25bw is currently running and uses both Blackwell GPUs (0,1)."
+        log_warn "Stop mimo25bw first: ./stop-model.sh mimo25bw"
+        read -p "Do you want to continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            return 1
+        fi
+    fi
     
     # Download if needed
     if ! model_is_downloaded "$model"; then
@@ -60,6 +80,8 @@ start_model() {
     
     if [ "$model" = "deepseek" ]; then
         $compose_cmd --profile deepseek up -d "$service"
+    elif [ "$model" = "mimo25bw" ]; then
+        $compose_cmd --profile mimo25bw up -d "$service"
     else
         $compose_cmd up -d "$service"
     fi

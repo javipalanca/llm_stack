@@ -11,6 +11,12 @@ model_list:
       api_base: http://blackwell:8002/v1
       api_key: sk-llm-stack
 
+  - model_name: mimo25bw
+    litellm_params:
+      model: openai/mimo25bw
+      api_base: http://blackwell:8006/v1
+      api_key: sk-llm-stack
+
   - model_name: mimo
     litellm_params:
       model: openai/mimo

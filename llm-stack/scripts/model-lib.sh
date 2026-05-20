@@ -24,6 +24,7 @@ list_models() {
     cat <<'EOF'
 llama33
 qwen36
+mimo25bw
 mimo
 llava
 deepseek
@@ -33,11 +34,12 @@ EOF
 get_model_repo_id() {
     local model=$1
     case "$model" in
-        llama33) echo "llama-3.3-70b-instruct-awq" ;;
+        llama33) echo "casperhansen/llama-3.3-70b-instruct-awq" ;;
         qwen36) echo "Qwen/Qwen3.6-27B" ;;
-        mimo) echo "XiaomiMiMo/MiMo-V2.5" ;;
+        mimo25bw) echo "XiaomiMiMo/MiMo-V2.5" ;;
+        mimo) echo "XiaomiMiMo/MiMo-7B-RL" ;;
         llava) echo "llava-hf/llava-v1.6-vicuna-7b-hf" ;;
-        deepseek) echo "deepseek-ai/DeepSeek-V4-Flash" ;;
+        deepseek) echo "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" ;;
         *) return 1 ;;
     esac
 }
@@ -73,9 +75,10 @@ get_model_local_name() {
     case "$model" in
         llama33) echo "llama-3.3-70b-instruct-awq" ;;
         qwen36) echo "Qwen3.6-27B" ;;
-        mimo) echo "MiMo-V2.5" ;;
+        mimo25bw) echo "MiMo-V2.5" ;;
+        mimo) echo "MiMo-7B-RL" ;;
         llava) echo "llava-v1.6-vicuna-7b-hf" ;;
-        deepseek) echo "DeepSeek-V4-Flash" ;;
+        deepseek) echo "DeepSeek-R1-Distill-Qwen-14B" ;;
         *) return 1 ;;
     esac
 }
@@ -92,7 +95,7 @@ get_model_server() {
     local model=$1
     validate_model "$model" || return 1
     case "$model" in
-        llama33|qwen36) echo "blackwell" ;;
+        llama33|qwen36|mimo25bw) echo "blackwell" ;;
         mimo|llava|deepseek) echo "a30" ;;
         *) return 1 ;;
     esac
@@ -104,6 +107,7 @@ get_model_port() {
     case "$model" in
         llama33) echo "8001" ;;
         qwen36) echo "8002" ;;
+        mimo25bw) echo "8006" ;;
         mimo) echo "8003" ;;
         llava) echo "8004" ;;
         deepseek) echo "8005" ;;
@@ -117,6 +121,7 @@ get_model_service() {
     case "$model" in
         llama33) echo "vllm-llama33" ;;
         qwen36) echo "vllm-qwen36" ;;
+        mimo25bw) echo "vllm-mimo25bw" ;;
         mimo) echo "vllm-mimo" ;;
         llava) echo "vllm-llava" ;;
         deepseek) echo "vllm-deepseek" ;;

@@ -40,11 +40,11 @@ search_huggingface_models() {
             echo "  Qwen/Qwen2.5-72B-Instruct"
             ;;
         deepseek*)
-            echo "  deepseek-ai/DeepSeek-V4-Flash"
+            echo "  deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
             echo "  deepseek-ai/DeepSeek-R1"
             ;;
         mimo*)
-            echo "  XiaomiMiMo/MiMo-V2.5"
+            echo "  XiaomiMiMo/MiMo-7B-RL"
             echo "  XiaomiMiMo/MiMo-VL-7B-RL"
             ;;
         llava*)

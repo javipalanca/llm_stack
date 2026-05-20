@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   vllm-mimo:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.21.0
     container_name: llm-mimo
     runtime: nvidia
     environment:
@@ -17,8 +17,9 @@ services:
     ipc: host
     shm_size: ${A30_SHARED_MEM}
     command: >
-      --model /models/MiMo-V2.5
+      --model /models/MiMo-7B-RL
       --served-model-name mimo
+      ${MIMO_TOOL_ARGS}
       --port 8000
       --gpu-memory-utilization ${MIMO_GPU_MEMORY_UTILIZATION}
       --max-model-len ${MIMO_MAX_MODEL_LEN}
@@ -34,7 +35,7 @@ services:
       - llm-network
 
   vllm-llava:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.21.0
     container_name: llm-llava
     runtime: nvidia
     environment:
@@ -51,6 +52,7 @@ services:
     command: >
       --model /models/llava-v1.6-vicuna-7b-hf
       --served-model-name llava
+      ${LLAVA_TOOL_ARGS}
       --port 8000
       --gpu-memory-utilization ${LLAVA_GPU_MEMORY_UTILIZATION}
       --max-model-len ${LLAVA_MAX_MODEL_LEN}
@@ -66,7 +68,7 @@ services:
       - llm-network
 
   vllm-deepseek:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.21.0
     container_name: llm-deepseek
     runtime: nvidia
     environment:
@@ -81,8 +83,9 @@ services:
     ipc: host
     shm_size: ${A30_SHARED_MEM}
     command: >
-      --model /models/DeepSeek-V4-Flash
+      --model /models/DeepSeek-R1-Distill-Qwen-14B
       --served-model-name deepseek
+      ${DEEPSEEK_TOOL_ARGS}
       --port 8000
       --gpu-memory-utilization ${DEEPSEEK_GPU_MEMORY_UTILIZATION}
       --max-model-len ${DEEPSEEK_MAX_MODEL_LEN}

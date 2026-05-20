@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   vllm-llama33:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.21.0
     container_name: llm-llama33
     runtime: nvidia
     environment:
@@ -19,6 +19,7 @@ services:
     command: >
       --model /models/llama-3.3-70b-instruct-awq
       --served-model-name llama33
+      ${LLAMA33_TOOL_ARGS}
       --quantization awq
       --port 8000
       --gpu-memory-utilization ${LLAMA33_GPU_MEMORY_UTILIZATION}
@@ -35,7 +36,7 @@ services:
       - llm-network
 
   vllm-qwen36:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.21.0
     container_name: llm-qwen36
     runtime: nvidia
     environment:
@@ -52,6 +53,7 @@ services:
     command: >
       --model /models/Qwen3.6-27B
       --served-model-name qwen36
+      ${QWEN36_TOOL_ARGS}
       --port 8000
       --gpu-memory-utilization ${QWEN36_GPU_MEMORY_UTILIZATION}
       --max-model-len ${QWEN36_MAX_MODEL_LEN}
@@ -65,6 +67,43 @@ services:
       start_period: 30s
     networks:
       - llm-network
+
+  vllm-mimo25bw:
+    image: vllm/vllm-openai:v0.21.0
+    container_name: llm-mimo25bw
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${MIMO25BW_GPUS}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${MIMO25BW_PORT}:8000"
+    ipc: host
+    shm_size: ${BLACKWELL_SHARED_MEM}
+    command: >
+      --model /models/MiMo-V2.5
+      --served-model-name mimo25bw
+      ${MIMO25BW_TOOL_ARGS}
+      --port 8000
+      --gpu-memory-utilization ${MIMO25BW_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${MIMO25BW_MAX_MODEL_LEN}
+      --tensor-parallel-size ${MIMO25BW_TENSOR_PARALLEL_SIZE}
+      --cpu-offload-gb ${MIMO25BW_CPU_OFFLOAD_GB}
+      --swap-space ${MIMO25BW_SWAP_SPACE_GB}
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 120s
+    networks:
+      - llm-network
+    profiles:
+      - mimo25bw
 
 networks:
   llm-network:
