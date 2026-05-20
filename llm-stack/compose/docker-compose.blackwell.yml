@@ -19,6 +19,7 @@ services:
     command: >
       --model /models/llama-3.3-70b-instruct-awq
       --served-model-name llama33
+      --quantization awq
       --port 8000
       --gpu-memory-utilization ${LLAMA33_GPU_MEMORY_UTILIZATION}
       --max-model-len ${LLAMA33_MAX_MODEL_LEN}
@@ -49,7 +50,7 @@ services:
     ipc: host
     shm_size: ${BLACKWELL_SHARED_MEM}
     command: >
-      --model /models/qwen3.6-35b-a3b-claude-4.7-opus-reasoning-distilled
+      --model /models/Qwen3.6-27B
       --served-model-name qwen36
       --port 8000
       --gpu-memory-utilization ${QWEN36_GPU_MEMORY_UTILIZATION}

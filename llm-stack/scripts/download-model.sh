@@ -36,18 +36,19 @@ search_huggingface_models() {
             echo "  casperhansen/llama-3.3-70b-instruct-awq"
             ;;
         qwen*)
+            echo "  Qwen/Qwen3.6-27B"
             echo "  Qwen/Qwen2.5-72B-Instruct"
-            echo "  Qwen/Qwen2.5-32B-Instruct"
             ;;
         deepseek*)
-            echo "  deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-            echo "  deepseek-ai/deepseek-llm-67b-chat"
+            echo "  deepseek-ai/DeepSeek-V4-Flash"
+            echo "  deepseek-ai/DeepSeek-R1"
             ;;
         mimo*)
-            echo "  mimo-v2.5-pro (custom/private model)"
+            echo "  XiaomiMiMo/MiMo-V2.5"
+            echo "  XiaomiMiMo/MiMo-VL-7B-RL"
             ;;
         llava*)
-            echo "  llava-hf/llava-1.5-13b-hf"
+            echo "  llava-hf/llava-v1.6-vicuna-7b-hf"
             echo "  llava-hf/llava-v1.6-34b-hf"
             ;;
         *)

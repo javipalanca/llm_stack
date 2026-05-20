@@ -1,19 +1,19 @@
 model_list:
   - model_name: llama33
     litellm_params:
-      model: openai/llama-3.3-70b-instruct-awq
+      model: openai/llama33
       api_base: http://blackwell:8001/v1
       api_key: sk-llm-stack
 
   - model_name: qwen36
     litellm_params:
-      model: openai/qwen3.6-35b-claude-4.7-opus-reasoning-distilled
+      model: openai/qwen36
       api_base: http://blackwell:8002/v1
       api_key: sk-llm-stack
 
   - model_name: mimo
     litellm_params:
-      model: openai/mimo-v2.5-pro
+      model: openai/mimo
       api_base: http://a30:8003/v1
       api_key: sk-llm-stack
 
@@ -25,7 +25,7 @@ model_list:
 
   - model_name: deepseek
     litellm_params:
-      model: openai/deepseek-r1-distill-qwen-32b
+      model: openai/deepseek
       api_base: http://a30:8005/v1
       api_key: sk-llm-stack
     priority: 5

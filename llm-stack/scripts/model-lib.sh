@@ -34,10 +34,10 @@ get_model_repo_id() {
     local model=$1
     case "$model" in
         llama33) echo "llama-3.3-70b-instruct-awq" ;;
-        qwen36) echo "qwen3.6-35b-a3b-claude-4.7-opus-reasoning-distilled" ;;
-        mimo) echo "mimo-v2.5-pro" ;;
-        llava) echo "llava" ;;
-        deepseek) echo "deepseek-r1-distill-qwen-32b" ;;
+        qwen36) echo "Qwen/Qwen3.6-27B" ;;
+        mimo) echo "XiaomiMiMo/MiMo-V2.5" ;;
+        llava) echo "llava-hf/llava-v1.6-vicuna-7b-hf" ;;
+        deepseek) echo "deepseek-ai/DeepSeek-V4-Flash" ;;
         *) return 1 ;;
     esac
 }
@@ -66,12 +66,26 @@ validate_model() {
     return 0
 }
 
+# Returns the local directory name (basename of repo, without org prefix)
+get_model_local_name() {
+    local model=$1
+    validate_model "$model" || return 1
+    case "$model" in
+        llama33) echo "llama-3.3-70b-instruct-awq" ;;
+        qwen36) echo "Qwen3.6-27B" ;;
+        mimo) echo "MiMo-V2.5" ;;
+        llava) echo "llava-v1.6-vicuna-7b-hf" ;;
+        deepseek) echo "DeepSeek-V4-Flash" ;;
+        *) return 1 ;;
+    esac
+}
+
 get_model_path() {
     local model=$1
-    local repo_id
+    local local_name
     validate_model "$model" || return 1
-    repo_id=$(get_model_repo_id "$model")
-    echo "$MODELS_PATH/$repo_id"
+    local_name=$(get_model_local_name "$model")
+    echo "$MODELS_PATH/$local_name"
 }
 
 get_model_server() {
@@ -198,38 +212,38 @@ port_is_in_use() {
 # ===== Hugging Face CLI Helpers =====
 
 hf_cli() {
-    if command -v huggingface-cli > /dev/null 2>&1; then
-        huggingface-cli "$@"
+    if command -v hf > /dev/null 2>&1; then
+        hf "$@"
         return
     fi
 
     if command -v uvx > /dev/null 2>&1; then
-        # Run huggingface-cli without system-wide installation.
-        uvx --from huggingface-hub huggingface-cli "$@"
+        # Run hf without system-wide installation.
+        uvx --from huggingface-hub hf "$@"
         return
     fi
 
-    log_error "huggingface-cli not found. Install locally with uv or pip."
-    log_error "Recommended (no system install): uvx --from huggingface-hub huggingface-cli --help"
+    log_error "hf (huggingface-hub CLI) not found. Install locally with uv or pip."
+    log_error "Recommended (no system install): uvx --from huggingface-hub hf --help"
     return 1
 }
 
 ensure_hf_cli_available() {
-    if command -v huggingface-cli > /dev/null 2>&1; then
+    if command -v hf > /dev/null 2>&1; then
         return 0
     fi
     if command -v uvx > /dev/null 2>&1; then
         return 0
     fi
 
-    log_error "Neither huggingface-cli nor uvx is available in PATH."
+    log_error "Neither hf nor uvx is available in PATH."
     log_error "Install uv: https://docs.astral.sh/uv/getting-started/installation/"
     return 1
 }
 
 # Export all functions for sourcing
 export -f log_info log_error log_warn
-export -f list_models get_model_repo_id
+export -f list_models get_model_repo_id get_model_local_name
 export -f validate_model get_model_path get_model_server get_model_port get_model_service
 export -f get_compose_file get_docker_compose_cmd
 export -f model_is_running model_is_downloaded
