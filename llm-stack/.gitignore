@@ -1,0 +1,65 @@
+# Environment and Configuration
+.env
+.env.local
+*.pem
+*.key
+
+# Models and Cache
+/models/
+/data/
+/volumes/
+~/.cache/huggingface/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Database and Logs
+*.db
+*.sqlite
+*.sqlite3
+litellm.db
+
+# Monitoring Data
+volumes/prometheus_data/
+volumes/grafana_data/
+prometheus_data/
+grafana_data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+*.out
+logs/
+*.tmp
+
+# System
+.DS_Store
+Thumbs.db
+.env.*.local
+
+# Temporary
+tmp/
+temp/
+*.bak
+*.backup

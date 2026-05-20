@@ -1,0 +1,184 @@
+LLM Stack - Project Structure
+==============================
+
+Generated: May 20, 2026
+Status: ✓ COMPLETE
+
+PROJECT LAYOUT
+==============
+
+llm-stack/
+├── .env.example                    Environment template (1.3 KB)
+├── .env                            Local configuration (auto-created from .env.example)
+├── README.md                       Complete documentation (32 KB)
+├── PROJECT_STRUCTURE.txt           This file
+│
+├── scripts/                        Bash automation scripts
+│   ├── model-lib.sh               Utility functions library (4.6 KB)
+│   ├── download-model.sh          HuggingFace model downloader (1.2 KB)
+│   ├── start-model.sh             Start individual models (2.4 KB)
+│   ├── stop-model.sh              Stop individual models (0.9 KB)
+│   ├── restart-model.sh           Restart models (0.9 KB)
+│   ├── status.sh                  Status report + GPU usage (3.1 KB)
+│   ├── test-model.sh              Test model endpoints (2.8 KB)
+│   └── swap-deepseek.sh           Switch MIMO ↔ DeepSeek (3.2 KB)
+│
+├── compose/                        Docker Compose configurations
+│   ├── docker-compose.blackwell.yml   Blackwell server (2 models, 2 GPUs)
+│   ├── docker-compose.a30.yml        A30 server (3 models, 3 GPUs)
+│   └── docker-compose.monitoring.yml Prometheus + Grafana stack
+│
+├── config/                         Application configuration
+│   └── litellm-config.yml          LiteLLM router routing table
+│
+├── monitoring/                     Monitoring configuration
+│   └── prometheus.yml              Prometheus scrape configuration
+│
+└── volumes/                        Data persistence directory
+    └── (prometheus and grafana data created at runtime)
+
+
+FILE MANIFEST
+=============
+
+Configuration Files (7 total):
+- .env.example                           Environment variables template
+- docker-compose.blackwell.yml           Blackwell vLLM services
+- docker-compose.a30.yml                 A30 vLLM services  
+- docker-compose.monitoring.yml          Prometheus + Grafana
+- litellm-config.yml                     LiteLLM routing configuration
+- prometheus.yml                         Prometheus monitoring config
+- README.md                              Complete user documentation
+
+Scripts (8 total - all executable):
+- model-lib.sh                           Shared utility functions
+- download-model.sh                      Download models from HuggingFace
+- start-model.sh                         Start individual models
+- stop-model.sh                          Stop individual models
+- restart-model.sh                       Restart individual models
+- status.sh                              Show status + GPU usage
+- test-model.sh                          Test model with prompt
+- swap-deepseek.sh                       Switch MIMO ↔ DeepSeek
+
+Project Documentation & Metadata:
+- README.md                              Complete setup, usage, troubleshooting
+- PROJECT_STRUCTURE.txt                  This inventory file
+
+
+FEATURE BREAKDOWN
+=================
+
+✓ Models Supported (5 total):
+  1. llama-3.3-70b-instruct-awq       (Blackwell GPU 0, port 8001)
+  2. qwen3.6-35b-claude-4.7-opus      (Blackwell GPU 1, port 8002)
+  3. mimo-v2.5-pro                    (A30 GPU 0+1, port 8003, tensor-parallel)
+  4. llava                            (A30 GPU 2, port 8004)
+  5. deepseek-r1-distill-qwen-32b     (A30 GPU 0+1, port 8005, optional)
+
+✓ Core Features:
+  - Individual model start/stop/restart
+  - Auto-download from HuggingFace with HF_TOKEN support
+  - GPU conflict detection (MIMO vs DeepSeek sharing)
+  - Health checks and automatic warmup detection
+  - Status reporting with GPU utilization metrics
+  - Direct vLLM endpoint testing
+  - LiteLLM unified routing layer
+
+✓ Advanced Features:
+  - Prometheus + Grafana monitoring (optional)
+  - NCCL tensor-parallel for multi-GPU models
+  - Configurable GPU memory utilization
+  - Configurable max context length per model
+  - Environment-based configuration
+  - Dry-run safe (idempotent operations)
+
+✓ Robustness:
+  - All scripts have error handling
+  - Idempotent operations (safe to re-run)
+  - Port/GPU conflict warnings
+  - Docker health checks for all services
+  - Model existence validation before starting
+  - Graceful startup sequencing
+
+
+QUICK REFERENCE
+===============
+
+Setup:
+  1. cp .env.example .env
+  2. Edit .env with your paths/hosts
+  3. mkdir -p /models && chmod 777 /models
+
+Start All Models:
+  Blackwell:  ./scripts/start-model.sh llama33 && ./scripts/start-model.sh qwen36
+  A30:        ./scripts/start-model.sh mimo && ./scripts/start-model.sh llava
+
+View Status:
+  ./scripts/status.sh
+
+Test Models:
+  ./scripts/test-model.sh llama33
+  ./scripts/test-model.sh --all
+
+Query via LiteLLM:
+  curl -X POST http://localhost:4000/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{"model":"llama33","prompt":"Hello","max_tokens":50}'
+
+Switch Models (MIMO ↔ DeepSeek):
+  Enable DeepSeek:   ./scripts/swap-deepseek.sh --enable
+  Disable DeepSeek:  ./scripts/swap-deepseek.sh --disable
+
+
+PORTS & ENDPOINTS
+=================
+
+vLLM Services (direct):
+  - llama33:  http://blackwell:8001/v1
+  - qwen36:   http://blackwell:8002/v1
+  - mimo:     http://a30:8003/v1
+  - llava:    http://a30:8004/v1
+  - deepseek: http://a30:8005/v1
+
+LiteLLM Router (unified):
+  - http://blackwell:4000/v1         (OpenAI-compatible API)
+
+Monitoring (optional):
+  - Prometheus: http://localhost:9090
+  - Grafana:    http://localhost:3000
+
+
+VALIDATION STATUS
+=================
+
+✓ All scripts have valid bash syntax
+✓ All docker-compose files are valid (warnings are expected without .env)
+✓ All 16 files created successfully
+✓ All scripts are executable (755 permissions)
+✓ Directory structure matches specifications
+
+
+NEXT STEPS
+==========
+
+1. Review README.md for complete documentation
+2. Copy .env.example to .env and customize values
+3. Create /models directory with write permissions
+4. Test individual components:
+   - ./scripts/status.sh (verify docker-compose)
+   - ./scripts/download-model.sh llama33 (test HuggingFace)
+   - ./scripts/start-model.sh llama33 (test vLLM)
+
+For detailed instructions, usage examples, and troubleshooting, see README.md
+
+
+SUPPORT
+=======
+
+For issues:
+1. Check README.md troubleshooting section
+2. Review docker logs: docker-compose logs [service]
+3. Verify GPU health: nvidia-smi
+4. Check .env configuration values
+
+Project Location: /Users/jpalanca/devel/llm_manager/llm-stack

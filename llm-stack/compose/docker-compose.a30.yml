@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  vllm-mimo:
+    image: vllm/vllm-openai:latest
+    container_name: llm-mimo
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${MIMO_GPUS}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${MIMO_PORT}:8000"
+    ipc: host
+    shm_size: ${A30_SHARED_MEM}
+    command: >
+      --model /models/mimo-v2.5-pro
+      --served-model-name mimo
+      --port 8000
+      --gpu-memory-utilization ${MIMO_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${MIMO_MAX_MODEL_LEN}
+      --tensor-parallel-size ${MIMO_TENSOR_PARALLEL_SIZE}
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - llm-network
+
+  vllm-llava:
+    image: vllm/vllm-openai:latest
+    container_name: llm-llava
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${LLAVA_GPU}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${LLAVA_PORT}:8000"
+    ipc: host
+    shm_size: ${A30_SHARED_MEM}
+    command: >
+      --model /models/llava
+      --served-model-name llava
+      --port 8000
+      --gpu-memory-utilization ${LLAVA_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${LLAVA_MAX_MODEL_LEN}
+      --tensor-parallel-size 1
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - llm-network
+
+  vllm-deepseek:
+    image: vllm/vllm-openai:latest
+    container_name: llm-deepseek
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${DEEPSEEK_GPUS}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${DEEPSEEK_PORT}:8000"
+    ipc: host
+    shm_size: ${A30_SHARED_MEM}
+    command: >
+      --model /models/deepseek-r1-distill-qwen-32b
+      --served-model-name deepseek
+      --port 8000
+      --gpu-memory-utilization ${DEEPSEEK_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${DEEPSEEK_MAX_MODEL_LEN}
+      --tensor-parallel-size ${DEEPSEEK_TENSOR_PARALLEL_SIZE}
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - llm-network
+    profiles:
+      - deepseek
+
+networks:
+  llm-network:
+    driver: bridge

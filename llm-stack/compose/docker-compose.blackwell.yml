@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  vllm-llama33:
+    image: vllm/vllm-openai:latest
+    container_name: llm-llama33
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${LLAMA33_GPU}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${LLAMA33_PORT}:8000"
+    ipc: host
+    shm_size: ${BLACKWELL_SHARED_MEM}
+    command: >
+      --model /models/llama-3.3-70b-instruct-awq
+      --served-model-name llama33
+      --port 8000
+      --gpu-memory-utilization ${LLAMA33_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${LLAMA33_MAX_MODEL_LEN}
+      --tensor-parallel-size 1
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - llm-network
+
+  vllm-qwen36:
+    image: vllm/vllm-openai:latest
+    container_name: llm-qwen36
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=${QWEN36_GPU}
+      - VLLM_ENABLE_CUDA_COMPATIBILITY=${VLLM_ENABLE_CUDA_COMPATIBILITY}
+      - VLLM_LOG_LEVEL=${VLLM_LOG_LEVEL}
+    volumes:
+      - ${MODELS_PATH}:/models
+      - ${HF_CACHE}:/root/.cache/huggingface
+    ports:
+      - "${QWEN36_PORT}:8000"
+    ipc: host
+    shm_size: ${BLACKWELL_SHARED_MEM}
+    command: >
+      --model /models/qwen3.6-35b-a3b-claude-4.7-opus-reasoning-distilled
+      --served-model-name qwen36
+      --port 8000
+      --gpu-memory-utilization ${QWEN36_GPU_MEMORY_UTILIZATION}
+      --max-model-len ${QWEN36_MAX_MODEL_LEN}
+      --tensor-parallel-size 1
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - llm-network
+
+networks:
+  llm-network:
+    driver: bridge
